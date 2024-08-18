@@ -29,7 +29,7 @@ public class GatewayImpl implements GatewayInterface {
 		try {
 			Registry registro = LocateRegistry.getRegistry(1101);
 			CarrosInterface servidorLoja = (CarrosInterface) registro.lookup("Carros");
-			System.out.println("retornando servidor da loja para cliente...");
+			System.out.println("retornando servidor da loja principal para cliente...");
 			return servidorLoja;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -67,7 +67,8 @@ public class GatewayImpl implements GatewayInterface {
 	}
 	
 	public CarrosInterface selectReplica() {
-		
+		System.out.println("Valor n = " + n);
+
 		switch (n) {
 			case 0: {
 				n = 1;
