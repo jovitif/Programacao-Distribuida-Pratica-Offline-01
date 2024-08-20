@@ -10,6 +10,12 @@ import autenticacao.AutenticacaoInterface;
 
 public class GatewayImpl implements GatewayInterface {
 	public int n = 0;
+	
+    private ServidorSelector servidorLoja = () -> getServidorLoja();
+    private ServidorSelector servidorReplica01 = () -> getServidorLojaReplica01();
+    private ServidorSelector servidorReplica02 = () -> getServidorLojaReplica02();
+
+	
 	@Override
 	public AutenticacaoInterface getServidorAutenticacao() {
 		try {
@@ -29,7 +35,7 @@ public class GatewayImpl implements GatewayInterface {
 		try {
 			Registry registro = LocateRegistry.getRegistry(1101);
 			CarrosInterface servidorLoja = (CarrosInterface) registro.lookup("Carros");
-			System.out.println("retornando servidor da loja para cliente...");
+			System.out.println("retornando servidor da loja principal para cliente...");
 			return servidorLoja;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -66,23 +72,30 @@ public class GatewayImpl implements GatewayInterface {
 		return null;
 	}
 	
-	public CarrosInterface selectReplica() {
-		
-		switch (n) {
-			case 0: {
-				n = 1;
-				return getServidorLoja();
-			}
-			case 1:{
-				n = 2;
-				return getServidorLojaReplica01();
-			}
-			case 2: {
-				n = 0;
-				return getServidorLojaReplica02();
-			}
-		}
-		return null;
+	 public CarrosInterface selectReplica() {
+	        System.out.println("Valor n = " + n);
+
+	        ServidorSelector selector = null;
+	        switch (n) {
+	            case 0:
+	                selector = servidorLoja;
+	                n = 1;
+	                break;
+	            case 1:
+	                selector = servidorReplica01;
+	                n = 2;
+	                break;
+	            case 2:
+	                selector = servidorReplica02;
+	                n = 0;
+	                break;
+	        }
+
+	        try {
+	            return selector != null ? selector.selecionarServidor() : null;
+	        } catch (RemoteException e) {
+	            e.printStackTrace();
+	        }
+	        return null;
+	    }
 	}
-	
-}
