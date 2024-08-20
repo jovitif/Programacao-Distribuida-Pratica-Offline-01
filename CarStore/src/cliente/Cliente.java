@@ -6,6 +6,10 @@ import java.rmi.registry.Registry;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import LojaDeCarros.CarrosInterface;
 import autenticacao.AutenticacaoInterface;
@@ -17,6 +21,7 @@ import gateway.GatewayInterface;
 
 public class Cliente {
 	public static Scanner scanner = new Scanner(System.in);
+	public static ExecutorService executor = Executors.newFixedThreadPool(5);
 	
 	public static void autenticacao(GatewayInterface objRemotoGateway) throws Exception{
 		
@@ -94,6 +99,7 @@ public class Cliente {
 			escolha = scanner.nextInt();
 			switch(escolha) {
 				case 1:
+					
 					adicionarCarro(objRemotoCarros);
 					break;
 				case 2: 
@@ -121,10 +127,12 @@ public class Cliente {
 	}
 	
 	public static void listarCarros(CarrosInterface objRemotoCarros) {
-		ArrayList<Carro> listaCarros;
 		try {
-			listaCarros = objRemotoCarros.listarCarros();
-			for (Carro carro : listaCarros) {
+			Future<ArrayList<Carro>> future = executor.submit(()->{
+				return objRemotoCarros.listarCarros();
+			});
+			//listaCarros = objRemotoCarros.listarCarros();
+			for (Carro carro : future.get()) {
 				System.out.println("------------------");
 				System.out.println("Renavam: " + carro.getRenavam());
 				System.out.println("Nome: " + carro.getNome());
@@ -133,7 +141,11 @@ public class Cliente {
 				System.out.println("categoria: " + carro.getCategoria());
 				System.out.println("------------------");
 			}
-		} catch (RemoteException e) {
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -144,29 +156,43 @@ public class Cliente {
 		System.out.println("digite o renavam ou nome do carro:");
 		String renavamOuNome = scanner.nextLine();
 		try {
-			Carro carro = objRemotoCarros.pesquisarCarro(renavamOuNome);
-			if(carro == null) {
+			Future<Carro> future = executor.submit(()->{
+				return objRemotoCarros.pesquisarCarro(renavamOuNome);
+			});
+			//Carro carro = objRemotoCarros.pesquisarCarro(renavamOuNome);
+			if(future.get() == null) {
 				System.out.println("carro não encontrado");
 			}
 			else {
 				System.out.println("------------------");
-				System.out.println("Renavam: " + carro.getRenavam());
-				System.out.println("Nome: " + carro.getNome());
-				System.out.println("Preço: " + carro.getPreco());
-				System.out.println("ano: " + carro.getAnoFabricacao());
-				System.out.println("categoria: " + carro.getCategoria());
+				System.out.println("Renavam: " + future.get().getRenavam());
+				System.out.println("Nome: " + future.get().getNome());
+				System.out.println("Preço: " + future.get().getPreco());
+				System.out.println("ano: " + future.get().getAnoFabricacao());
+				System.out.println("categoria: " + future.get().getCategoria());
 				System.out.println("------------------");
 			}
-		} catch (RemoteException e) {
-			System.out.println("não foi possivel conectar-se ao servidor... Tente novamente mais tarde");
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
 	public static void exibirQuant(CarrosInterface objRemotoCarros) {
 		try {
-			System.out.println("quantidade de carros: " + objRemotoCarros.getQuantidade());
-		} catch (RemoteException e) {
-			System.out.println("não foi possivel conectar-se ao servidor... Tente novamente mais tarde");
+			Future<Integer> future = executor.submit(()->{
+				return objRemotoCarros.getQuantidade();
+			});
+			System.out.println("quantidade de carros: " + future.get());
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -184,8 +210,11 @@ public class Cliente {
 				System.out.println("Preco: " + carro.getPreco());
 				System.out.println("Confirmar Compra ? S/N");
 				if(scanner.nextLine().equalsIgnoreCase("S")) {
-					boolean compra = objRemotoCarros.comprarCarro(carro);
-					if(compra) {
+					Future<Boolean> future = executor.submit(()->{
+						return objRemotoCarros.comprarCarro(carro);
+					});
+					//boolean compra = objRemotoCarros.comprarCarro(carro);
+					if(future.get()) {
 						System.out.println("Parabens pelo novo carro!");
 					}
 					else {
@@ -196,7 +225,7 @@ public class Cliente {
 					System.out.println("fica pra proxima");
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (RemoteException | InterruptedException | ExecutionException e) {
 			System.out.println("erro na compra... tente novamente mais tarde");
 		}
 	}
@@ -215,7 +244,7 @@ public class Cliente {
 		double preco = scanner.nextDouble();
 		System.out.print("categoria:1- Economico 2- Intermediario 3- Executivo");
 		int escolha = scanner.nextInt();
-		Categorias categoria = null;
+		final Categorias categoria;
 		switch(escolha) {
 			case 1:
 				categoria  = Categorias.economico;
@@ -231,19 +260,22 @@ public class Cliente {
 				adicionarCarro(objRemotoCarros);
 		}
 		try {
-			int  add = objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, categoria);
-			if(add == 1) {
+			Future<Integer> future = executor.submit(()->{
+				return objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, categoria);
+			});
+			//int  add = objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, categoria);
+			if(future.get() == 1) {
 				System.out.println("carro já existe no registro");
 			}
 			else {
-				if(add == 2) {
+				if(future.get() == 2) {
 					System.out.println("carro adicionado");
 				}
 				else {
 					System.out.println("falha ao adicionar carro... tente novamente");
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			System.out.println("falha ao adicionar carro... Tente novamente mais tarde");
 		}
 	}
