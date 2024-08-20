@@ -121,45 +121,52 @@ public class Cliente {
 	}
 	
 	public static void listarCarros(CarrosInterface objRemotoCarros) {
-		ArrayList<Carro> listaCarros;
-		try {
-			listaCarros = objRemotoCarros.listarCarros();
-			for (Carro carro : listaCarros) {
-				System.out.println("------------------");
-				System.out.println("Renavam: " + carro.getRenavam());
-				System.out.println("Nome: " + carro.getNome());
-				System.out.println("Preço: " + carro.getPreco());
-				System.out.println("ano: " + carro.getAnoFabricacao());
-				System.out.println("categoria: " + carro.getCategoria());
-				System.out.println("------------------");
-			}
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		
+	    try {
+	        ArrayList<Carro> listaCarros = objRemotoCarros.listarCarros();
+	        listaCarros.forEach(carro -> {
+	            System.out.println("------------------");
+	            System.out.println("Renavam: " + carro.getRenavam());
+	            System.out.println("Nome: " + carro.getNome());
+	            System.out.println("Preço: " + carro.getPreco());
+	            System.out.println("ano: " + carro.getAnoFabricacao());
+	            System.out.println("categoria: " + carro.getCategoria());
+	            System.out.println("------------------");
+	        });
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 	
 	public static void pesquisarCarro(CarrosInterface objRemotoCarros) {
-		scanner.nextLine();
-		System.out.println("digite o renavam ou nome do carro:");
-		String renavamOuNome = scanner.nextLine();
-		try {
-			Carro carro = objRemotoCarros.pesquisarCarro(renavamOuNome);
-			if(carro == null) {
-				System.out.println("carro não encontrado");
-			}
-			else {
-				System.out.println("------------------");
-				System.out.println("Renavam: " + carro.getRenavam());
-				System.out.println("Nome: " + carro.getNome());
-				System.out.println("Preço: " + carro.getPreco());
-				System.out.println("ano: " + carro.getAnoFabricacao());
-				System.out.println("categoria: " + carro.getCategoria());
-				System.out.println("------------------");
-			}
-		} catch (RemoteException e) {
-			System.out.println("não foi possivel conectar-se ao servidor... Tente novamente mais tarde");
-		}
+	    scanner.nextLine();
+	    System.out.println("Digite o renavam ou nome do carro:");
+	    String renavamOuNome = scanner.nextLine();
+
+	    CarroPredicate criterioPesquisa = (carro, criterio) -> 
+	        carro.getRenavam().equals(criterio) || carro.getNome().equalsIgnoreCase(criterio);
+
+	    try {
+	        ArrayList<Carro> carros = objRemotoCarros.listarCarros();
+	        Carro carro = carros.stream()
+	                            .filter(c -> criterioPesquisa.test(c, renavamOuNome))
+	                            .findFirst()
+	                            .orElse(null);
+	        
+	        if (carro == null) {
+	            System.out.println("Carro não encontrado");
+	        } else {
+	            System.out.println("------------------");
+	            System.out.println("Renavam: " + carro.getRenavam());
+	            System.out.println("Nome: " + carro.getNome());
+	            System.out.println("Preço: " + carro.getPreco());
+	            System.out.println("Ano: " + carro.getAnoFabricacao());
+	            System.out.println("Categoria: " + carro.getCategoria());
+	            System.out.println("------------------");
+	        }
+	    } catch (RemoteException e) {
+	        System.out.println("Erro ao conectar-se ao servidor... Tente novamente mais tarde.");
+	    }
 	}
 	
 	public static void exibirQuant(CarrosInterface objRemotoCarros) {

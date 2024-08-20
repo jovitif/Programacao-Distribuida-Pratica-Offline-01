@@ -49,45 +49,55 @@ public class CarrosImpl implements CarrosInterface{
 
 	
 	@Override
-	public int adicionarCarro(String renavam, String modelo, int ano, double preco, Categorias categoria)throws RemoteException {
-		Carro carro = new Carro(renavam,modelo,ano,preco,categoria);
-		Carro aux = carros.get(carro);
-		if(aux != null) {
-			return 1;
-		}
-		
-		boolean add = baseDados.addCarro(carro);
-		if(add) {
-			System.out.println("carro adicionado");
-			return 2;
-		}
-		return 3;
+	public int adicionarCarro(String renavam, String modelo, int ano, double preco, Categorias categoria) throws RemoteException {
+	    Carro carro = new Carro(renavam, modelo, ano, preco, categoria);
+	    
+	    // Usando a interface funcional com uma expressão lambda para verificar e adicionar o carro
+	    OperacaoCarro operacao = (Carro c) -> {
+	        if (carros.containsKey(c.getRenavam())) {
+	            return false; // Carro já existe
+	        }
+	        return baseDados.addCarro(c); // Adiciona o carro à base de dados
+	    };
+
+	    boolean sucesso = operacao.executar(carro);
+	    if (sucesso) {
+	        System.out.println("Carro adicionado");
+	        return 2;
+	    }
+	    return 3; // Falha ao adicionar
 	}
+
 	@Override
-	public Boolean removerCarro(String renavam) throws RemoteException{
-		boolean removido =  baseDados.removeCarro(renavam);
-		if(removido) {
-			System.out.println("carro com renavam " + renavam + " removido" );
-			return true;
-		}
-		return false;
+	public Boolean removerCarro(String renavam) throws RemoteException {
+	    OperacaoCarro operacao = (Carro c) -> baseDados.removeCarro(renavam);
+	    
+	    boolean removido = operacao.executar(null);
+	    if (removido) {
+	        System.out.println("Carro com renavam " + renavam + " removido");
+	        return true;
+	    }
+	    return false;
 	}
+
 	@Override
 	public ArrayList<Carro> listarCarros()throws RemoteException {
 		System.out.println("retornando lista de carros...");
 		return baseDados.listarCarros();
 	}
 	@Override
-	public Carro pesquisarCarro(String RenavanOuNome)throws RemoteException {
-		
-		Carro carro =  baseDados.pesquisarCarro(RenavanOuNome);
-		if(carro == null) {
-			System.out.println("carro não encontrado na base de dados");
-			return carro;
-		}
-		System.out.println("carro encontrado, retornando para usuario");
-		return carro;
+	public Carro pesquisarCarro(String renavamOuNome) throws RemoteException {
+	    OperacaoCarro pesquisa = (Carro c) -> baseDados.pesquisarCarro(renavamOuNome) != null;
+	    
+	    Carro carro = baseDados.pesquisarCarro(renavamOuNome);
+	    if (pesquisa.executar(carro)) {
+	        System.out.println("Carro encontrado, retornando para o usuário");
+	        return carro;
+	    }
+	    System.out.println("Carro não encontrado na base de dados");
+	    return null;
 	}
+
 	@Override
 	public Boolean alterarCarro(String renavam, String modelo, int ano, double preco, Categorias categoria)throws RemoteException{
 		
