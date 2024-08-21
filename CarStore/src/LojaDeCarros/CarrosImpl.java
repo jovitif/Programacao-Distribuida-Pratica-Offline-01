@@ -49,8 +49,20 @@ public class CarrosImpl implements CarrosInterface{
 
 	
 	@Override
-	public int adicionarCarro(String renavam, String modelo, int ano, double preco, Categorias categoria) throws RemoteException {
-	    Carro carro = new Carro(renavam, modelo, ano, preco, categoria);
+	public int adicionarCarro(String renavam, String modelo, int ano, double preco, int categoria) throws RemoteException {
+		Categorias escolha = null;
+		switch(categoria) {
+		case 1:
+			escolha  = Categorias.economico;
+			break;
+		case 2:
+			escolha = Categorias.intermediario;
+			break;
+		case 3:
+			escolha = Categorias.executivo;
+			break;
+		}
+		Carro carro = new Carro(renavam, modelo, ano, preco, escolha);
 	    
 	    // Usando a interface funcional com uma expressão lambda para verificar e adicionar o carro
 	    OperacaoCarro operacao = (Carro c) -> {
@@ -99,9 +111,20 @@ public class CarrosImpl implements CarrosInterface{
 	}
 
 	@Override
-	public Boolean alterarCarro(String renavam, String modelo, int ano, double preco, Categorias categoria)throws RemoteException{
-		
-		boolean edit = baseDados.alterarCarro(renavam, modelo, ano, preco, categoria);
+	public Boolean alterarCarro(String renavam, String modelo, int ano, double preco, int categoria)throws RemoteException{
+		Categorias escolha = null;
+		switch(categoria) {
+		case 1:
+			escolha  = Categorias.economico;
+			break;
+		case 2:
+			escolha = Categorias.intermediario;
+			break;
+		case 3:
+			escolha = Categorias.executivo;
+			break;
+		}
+		boolean edit = baseDados.alterarCarro(renavam, modelo, ano, preco, escolha);
 		if(edit) {
 			System.out.println("carro editado na base de dados");
 			return edit;

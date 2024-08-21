@@ -6,6 +6,10 @@ import java.rmi.registry.Registry;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import LojaDeCarros.CarrosInterface;
 import autenticacao.AutenticacaoInterface;
@@ -17,6 +21,7 @@ import gateway.GatewayInterface;
 
 public class Cliente {
 	public static Scanner scanner = new Scanner(System.in);
+	public static ExecutorService executor = Executors.newCachedThreadPool();
 	
 	public static void autenticacao(GatewayInterface objRemotoGateway) throws Exception{
 		
@@ -122,8 +127,11 @@ public class Cliente {
 	
 	public static void listarCarros(CarrosInterface objRemotoCarros) {
 	    try {
-	        ArrayList<Carro> listaCarros = objRemotoCarros.listarCarros();
-	        listaCarros.forEach(carro -> {
+	    	Future<ArrayList<Carro>> future = executor.submit(()->{
+	    		return objRemotoCarros.listarCarros();
+	    	});
+	        //ArrayList<Carro> listaCarros = objRemotoCarros.listarCarros();
+	        future.get().forEach(carro -> {
 	            System.out.println("------------------");
 	            System.out.println("Renavam: " + carro.getRenavam());
 	            System.out.println("Nome: " + carro.getNome());
@@ -132,7 +140,7 @@ public class Cliente {
 	            System.out.println("categoria: " + carro.getCategoria());
 	            System.out.println("------------------");
 	        });
-	    } catch (RemoteException e) {
+	    } catch ( InterruptedException | ExecutionException e) {
 	        e.printStackTrace();
 	    }
 	}
@@ -147,8 +155,11 @@ public class Cliente {
 	        carro.getRenavam().equals(criterio) || carro.getNome().equalsIgnoreCase(criterio);
 
 	    try {
-	        ArrayList<Carro> carros = objRemotoCarros.listarCarros();
-	        Carro carro = carros.stream()
+	    	Future<ArrayList<Carro>> future = executor.submit(()->{
+	    		return objRemotoCarros.listarCarros();
+	    	});
+	        //ArrayList<Carro> carros = objRemotoCarros.listarCarros();
+	        Carro carro = future.get().stream()
 	                            .filter(c -> criterioPesquisa.test(c, renavamOuNome))
 	                            .findFirst()
 	                            .orElse(null);
@@ -164,15 +175,18 @@ public class Cliente {
 	            System.out.println("Categoria: " + carro.getCategoria());
 	            System.out.println("------------------");
 	        }
-	    } catch (RemoteException e) {
+	    } catch (InterruptedException | ExecutionException e) {
 	        System.out.println("Erro ao conectar-se ao servidor... Tente novamente mais tarde.");
 	    }
 	}
 	
 	public static void exibirQuant(CarrosInterface objRemotoCarros) {
 		try {
-			System.out.println("quantidade de carros: " + objRemotoCarros.getQuantidade());
-		} catch (RemoteException e) {
+			Future<Integer> future = executor.submit(()->{
+	    		return objRemotoCarros.getQuantidade();
+	    	});
+			System.out.println("quantidade de carros: " + future.get());
+		} catch ( InterruptedException | ExecutionException e) {
 			System.out.println("não foi possivel conectar-se ao servidor... Tente novamente mais tarde");
 		}
 	}
@@ -181,7 +195,11 @@ public class Cliente {
 		scanner.nextLine();
 		System.out.println("digite o nome do carro:");
 		try {
-			Carro carro = objRemotoCarros.pesquisarCarro(scanner.nextLine());
+			Future<Carro> future = executor.submit(()->{
+	    		return objRemotoCarros.pesquisarCarro(scanner.nextLine());
+	    	});
+			//Carro carro = objRemotoCarros.pesquisarCarro(scanner.nextLine());
+			Carro carro = future.get();
 			if(carro ==null) {
 				System.out.println("carro não encontrado");
 			}
@@ -191,8 +209,11 @@ public class Cliente {
 				System.out.println("Preco: " + carro.getPreco());
 				System.out.println("Confirmar Compra ? S/N");
 				if(scanner.nextLine().equalsIgnoreCase("S")) {
-					boolean compra = objRemotoCarros.comprarCarro(carro);
-					if(compra) {
+					Future<Boolean> future2 = executor.submit(()->{
+			    		return objRemotoCarros.comprarCarro(carro);
+			    	});
+					//boolean compra = objRemotoCarros.comprarCarro(carro);
+					if(future2.get()) {
 						System.out.println("Parabens pelo novo carro!");
 					}
 					else {
@@ -203,7 +224,7 @@ public class Cliente {
 					System.out.println("fica pra proxima");
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			System.out.println("erro na compra... tente novamente mais tarde");
 		}
 	}
@@ -222,7 +243,7 @@ public class Cliente {
 		double preco = scanner.nextDouble();
 		System.out.print("categoria:1- Economico 2- Intermediario 3- Executivo");
 		int escolha = scanner.nextInt();
-		Categorias categoria = null;
+		/*Categorias categoria = null;
 		switch(escolha) {
 			case 1:
 				categoria  = Categorias.economico;
@@ -236,21 +257,24 @@ public class Cliente {
 			default:
 				System.out.println("opcao invalida");
 				adicionarCarro(objRemotoCarros);
-		}
+		}*/
 		try {
-			int  add = objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, categoria);
-			if(add == 1) {
+			Future<Integer> future = executor.submit(()->{
+	    		return objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, escolha);
+	    	});
+			//int  add = objRemotoCarros.adicionarCarro(renavam, modelo, ano, preco, categoria);
+			if(future.get() == 1) {
 				System.out.println("carro já existe no registro");
 			}
 			else {
-				if(add == 2) {
+				if(future.get() == 2) {
 					System.out.println("carro adicionado");
 				}
 				else {
 					System.out.println("falha ao adicionar carro... tente novamente");
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			System.out.println("falha ao adicionar carro... Tente novamente mais tarde");
 		}
 	}
@@ -279,7 +303,10 @@ public class Cliente {
 		String renavam = scanner.nextLine();
 		
 		try {
-			Carro carro = objRemotoCarros.pesquisarCarro(renavam);
+			Future<Carro> future = executor.submit(()->{
+	    		return objRemotoCarros.pesquisarCarro(renavam);
+	    	});
+			Carro carro = future.get();
 			if(carro == null) {
 				System.out.println("carro não encontrado");
 			}
@@ -302,7 +329,7 @@ public class Cliente {
 				double preco = scanner.nextDouble();
 				System.out.print("categoria:1- Economico 2- Intermediario 3- Executivo");
 				int escolha = scanner.nextInt();
-				Categorias categoria = null;
+				/*Categorias categoria = null;
 				switch(escolha) {
 					case 1:
 						categoria  = Categorias.economico;
@@ -316,8 +343,12 @@ public class Cliente {
 					default:
 						System.out.println("opcao invalida");
 						editarCarro(objRemotoCarros);
-				}
-				Boolean edit =objRemotoCarros.alterarCarro(renavam, modelo, ano, preco, categoria);
+				}*/
+				Future<Boolean> future2 = executor.submit(()->{
+		    		return objRemotoCarros.alterarCarro(renavam, modelo, ano, preco, escolha);
+		    	});
+				//Boolean edit =objRemotoCarros.alterarCarro(renavam, modelo, ano, preco, categoria);
+				Boolean edit = future2.get();
 				if(edit) {
 					System.out.println("carro editado com sucesso");
 				}
@@ -325,7 +356,7 @@ public class Cliente {
 					System.out.println("falha ao editar carro.... Tente novamente mais tarde");
 				}
 			}
-		} catch (RemoteException e) {
+		} catch ( InterruptedException | ExecutionException e) {
 			System.out.println("erro ao editar carro... Tente novamente mais tarde");
 		}
 	}
