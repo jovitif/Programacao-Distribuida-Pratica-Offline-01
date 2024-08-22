@@ -44,7 +44,7 @@ public class Cliente {
 	
 	public static void lojaCarros(GatewayInterface objRemotoGateway,Usuario user)throws Exception {
 	
-		CarrosInterface objRemotoCarros = objRemotoGateway.selectReplica();
+		CarrosInterface objRemotoCarros = objRemotoGateway.selectReplica(2);
 		if(user.getTipo() == TipoUsuario.cliente) {
 			menuCliente(objRemotoCarros,user);
 		}

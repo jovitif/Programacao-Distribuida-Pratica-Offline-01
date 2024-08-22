@@ -12,5 +12,5 @@ public interface GatewayInterface extends Remote {
     CarrosInterface getServidorLoja() throws RemoteException;
     CarrosInterface getServidorLojaReplica01() throws RemoteException;
     CarrosInterface getServidorLojaReplica02() throws RemoteException;
-    CarrosInterface selectReplica() throws RemoteException;
+    CarrosInterface selectReplica(int tipoSelecao) throws RemoteException;
 }

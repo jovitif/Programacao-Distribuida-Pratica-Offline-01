@@ -10,11 +10,94 @@ import autenticacao.AutenticacaoInterface;
 
 public class GatewayImpl implements GatewayInterface {
 	public int n = 0;
+	private int[] conexoesPorReplica = {0,0,0};
 	
     private ServidorSelector servidorLoja = () -> getServidorLoja();
     private ServidorSelector servidorReplica01 = () -> getServidorLojaReplica01();
     private ServidorSelector servidorReplica02 = () -> getServidorLojaReplica02();
 
+    private ServidorSelector selectByLeastConnections(int[] pesos) {
+    	int[] pesosDasReplicas = pesos;
+    	if(conexoesPorReplica[0]*pesosDasReplicas[0] <= conexoesPorReplica[1]*pesosDasReplicas[1]) {
+    		if(conexoesPorReplica[0]*pesosDasReplicas[0]<=conexoesPorReplica[2]*pesosDasReplicas[2]) {
+    			
+    			conexoesPorReplica[0]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+        		return servidorLoja;
+    		}
+    		else {
+    			conexoesPorReplica[2]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+    			return servidorReplica02;
+    		}
+    		
+    	}
+    	else if(conexoesPorReplica[1]*pesosDasReplicas[1] <= conexoesPorReplica[0]*pesosDasReplicas[0]) {
+    		if(conexoesPorReplica[1]*pesosDasReplicas[1]<=conexoesPorReplica[2]*pesosDasReplicas[2]) {
+    			
+    			conexoesPorReplica[1]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+    			return servidorReplica01;
+    		}
+    		else {
+    			conexoesPorReplica[2]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+    			return servidorReplica02;
+    		}
+    	}
+    	else if(conexoesPorReplica[2]*pesosDasReplicas[2] <= conexoesPorReplica[0]*pesosDasReplicas[0]) {
+    		if(conexoesPorReplica[2]*pesosDasReplicas[2] <=conexoesPorReplica[1]*pesosDasReplicas[1]) {
+    			
+    			conexoesPorReplica[2]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+    			return servidorReplica02;
+    		}
+    		else {
+    			conexoesPorReplica[1]++;
+    			
+    			for(int i = 0; i<conexoesPorReplica.length; i++) {
+    				System.out.println("conexões replica "+(i+1)+": "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+    			}
+    			
+    			return servidorReplica01;
+    		}
+    		
+    	}
+    	else if (conexoesPorReplica[0]*pesosDasReplicas[0] == conexoesPorReplica[1]*pesosDasReplicas[1] &&
+    			 conexoesPorReplica[0]*pesosDasReplicas[0] == conexoesPorReplica[2]*pesosDasReplicas[2] &&
+    		     conexoesPorReplica[1]*pesosDasReplicas[1] == conexoesPorReplica[2]*pesosDasReplicas[2]) {
+    		
+    		conexoesPorReplica[0]++;
+    		
+    		for(int i = 0; i<conexoesPorReplica.length; i++) {
+				System.out.println("conexões: "+conexoesPorReplica[i]*pesosDasReplicas[i]);
+			}
+    		
+    		return servidorLoja;
+    	}
+    	
+    	return null;
+    }
 	
 	@Override
 	public AutenticacaoInterface getServidorAutenticacao() {
@@ -72,11 +155,14 @@ public class GatewayImpl implements GatewayInterface {
 		return null;
 	}
 	
-	 public CarrosInterface selectReplica() {
-	        System.out.println("Valor n = " + n);
+	 public CarrosInterface selectReplica(int tipoSelecao) {
 
 	        ServidorSelector selector = null;
-	        switch (n) {
+	        // Metodo Round Robin
+	        if(tipoSelecao == 0) {
+	        	System.out.println("Método Round Robin:");
+	        	System.out.println("Valor n = " + n);
+	        	switch (n) {
 	            case 0:
 	                selector = servidorLoja;
 	                n = 1;
@@ -89,8 +175,20 @@ public class GatewayImpl implements GatewayInterface {
 	                selector = servidorReplica02;
 	                n = 0;
 	                break;
+	        	}
+		 	}
+	        // Metodo Least Connections
+	        else if(tipoSelecao == 1) {
+	        	System.out.println("Método Least Connections:");
+	        	int[] pesos = {1,1,1};
+	        	selector = selectByLeastConnections(pesos);
 	        }
-
+	        else if(tipoSelecao == 2) {
+	        	System.out.println("Método Weighted Least Connections:");
+	        	int[] pesos = {1,3,2};
+	        	selector = selectByLeastConnections(pesos);
+	        }
+	        
 	        try {
 	            return selector != null ? selector.selecionarServidor() : null;
 	        } catch (RemoteException e) {
